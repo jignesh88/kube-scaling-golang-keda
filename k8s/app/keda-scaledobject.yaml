@@ -1,0 +1,32 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: keda-demo-scaler
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: keda-demo
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  pollingInterval: 15
+  cooldownPeriod: 30
+  triggers:
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus-service.monitoring.svc.cluster.local:9090
+      metricName: kafka_queue_depth
+      threshold: '10'
+      query: kafka_queue_depth{topic="app-tasks"}
+      activationThreshold: '5'
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus-service.monitoring.svc.cluster.local:9090
+      metricName: app_processing_tasks
+      threshold: '8'
+      query: app_processing_tasks
+  - type: kafka
+    metadata:
+      bootstrapServers: kafka-service:9092
+      consumerGroup: tasks-consumer
+      topic: app-tasks
+      lagThreshold: "10"
